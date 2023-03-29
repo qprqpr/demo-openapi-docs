@@ -36,7 +36,7 @@ const config = {
           routeBasePath: 'api/yupmaster',
         },
         docs: {
-          routeBasePath: '/docs',
+          routeBasePath: '/',
           sidebarPath: require.resolve('./sidebars.js'),
           sidebarCollapsible: true,
           sidebarCollapsed: true,
