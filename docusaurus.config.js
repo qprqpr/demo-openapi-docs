@@ -3,8 +3,8 @@
 const lightCodeTheme = require('prism-react-renderer/themes/github');
 const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 
-const organizationName = 'GaijinEntertainment';
-const projectName = 'GaijinApplicationPlatform';
+const organizationName = 'qprqpr';
+const projectName = 'demo-openapi-docs';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
@@ -36,7 +36,7 @@ const config = {
           routeBasePath: 'api/yupmaster',
         },
         docs: {
-          routeBasePath: '/',
+          routeBasePath: '/docs',
           sidebarPath: require.resolve('./sidebars.js'),
           sidebarCollapsible: true,
           sidebarCollapsed: true,
