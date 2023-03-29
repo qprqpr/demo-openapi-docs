@@ -1,0 +1,212 @@
+openapi: "3.0.0"
+info:
+  title: "Gaijin Application Platform: YupMaster API"
+  version: "1.53.0"
+  contact:
+    name: "Gleb Yaltchik"
+    url: https://www.example.com/support
+    email: g.yaltchik@gaijin.team
+servers:
+  - url: "http://localhost:8888"
+    description: "local development server"
+  - url: "https://gdn.gaijin.net"
+    description: "production server"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Success:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: ["OK"]
+    Error:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: ["ERROR"]
+        error:
+          type: string
+    RegisteredAPK:
+      type: "object"
+      properties:
+        Project:
+          type: "string"
+        Version:
+          type: "string"
+        Uploaded:
+          type: "string"
+          format: "date-time"
+        Modified:
+          type: "string"
+          format: "date-time"
+        Tag:
+          type: "string"
+      example:
+        {
+          "Project": "shiny_game",
+          "Version": "1.53.0",
+          "Uploaded": "2020-04-01T12:00:00Z",
+          "Modified": "2020-05-01T12:00:00Z",
+          "Tag": "",
+        }
+    RegisteredAPKList:
+      type: array
+      items:
+        $ref: "#/components/schemas/RegisteredAPK"
+  responses:
+    errorResponse:
+      description: Failed request response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+paths:
+  "/apk/list":
+    get:
+      summary: Get list of all APK for the project
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: "proj"
+          in: "query"
+          required: true
+          description: "project ID"
+          allowEmptyValue: false
+          schema:
+            type: "string"
+      responses:
+        200:
+          description: "Server response"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - allOf:
+                      - $ref: "#/components/schemas/Success"
+                      - type: object
+                        properties:
+                          apk:
+                            $ref: "#/components/schemas/RegisteredAPKList"
+                  - $ref: "#/components/responses/errorResponse"
+  "/apk/upload":
+    post:
+      summary: Upload APK file to the Yupmaster
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: ["proj", "apk"]
+              properties:
+                proj:
+                  type: string
+                apk:
+                  type: string
+                  format: binary
+      responses:
+        200:
+          description: "successful upload response"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - allOf:
+                      - $ref: "#/components/schemas/Success"
+                      - type: object
+                        properties:
+                          project:
+                            type: string
+                          tag:
+                            type: string
+                          url:
+                            type: string
+                          version:
+                            type: string
+                  - $ref: "#/components/responses/errorResponse"
+              example:
+                {
+                  "status": "OK",
+                  "project": "new_shiny_game",
+                  "version": "1.53.0",
+                  "tag": "47c81485935ae51e",
+                  "url": "https://gdn.gaijin.net/apk/download?proj=shiny_game&tag=47c81485935ae51e",
+                }
+  "/apk/set_tag":
+    post:
+      summary: Set tag to APK file by project
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: ["proj", "ver", "tag"]
+              properties:
+                proj:
+                  type: string
+                version:
+                  type: string
+                tag:
+                  type: string
+      responses:
+        200:
+          description: "successful upload response"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Success"
+                  - $ref: "#/components/responses/errorResponse"
+  "/apk/download":
+    get:
+      summary: Download specified APK file
+      parameters:
+        - name: "proj"
+          in: "query"
+          required: true
+          description: "project ID"
+          allowEmptyValue: false
+          schema:
+            type: "string"
+        - name: "tag"
+          in: "query"
+          required: true
+          description: "tag ID assigned to the APK file"
+          allowEmptyValue: false
+          schema:
+            type: "string"
+      responses:
+        200:
+          description: "APK file content"
+          headers:
+            ETag:
+              description: "ETag of the APK file"
+              schema:
+                type: "string"
+            Content-Disposition:
+              description: "File name of the APK file"
+              schema:
+                type: "string"
+          content:
+            "application/vnd.android.package-archive":
+              schema:
+                type: "string"
+                format: "binary"
+        404:
+          description: "APK file not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/responses/errorResponse"
+              example: { "status": "ERROR", "error": "not found" }
